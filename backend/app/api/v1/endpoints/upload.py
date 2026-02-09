@@ -15,6 +15,7 @@ from app.models.prediction import RawUpload
 from app.services.data_processor import DataProcessor
 from app.services.data_upload import UploadService
 from app.services.data_validator import DataValidator
+from app.services.processing_pipeline import ProcessingPipeline
 from app.services.schema_detector import SchemaDetector
 
 router = APIRouter()
@@ -129,15 +130,65 @@ async def list_uploads(skip: int = 0, limit: int = 100):
     return {"message": "Not implemented", "skip": skip, "limit": limit}
 
 
-@router.post("/uploads/{upload_id}/process")
-async def process_upload(upload_id: str):
+@router.post("/uploads/process")
+async def process_upload(body: dict):
     """
     Process uploaded file and save to sales_data table
 
-    Requires column mapping to be set first
+    Body: {"upload_id": "uuid"}
     """
-    # TODO: Implement processing
-    return {"message": "Processing not implemented yet", "upload_id": upload_id}
+    upload_id = body.get("upload_id")
+    if not upload_id:
+        raise HTTPException(status_code=400, detail="upload_id is required")
+
+    async with AsyncSessionLocal() as session:
+        upload = await session.get(RawUpload, upload_id)
+        if not upload:
+            raise HTTPException(status_code=404, detail="Upload not found")
+
+        pipeline = ProcessingPipeline(session)
+
+        try:
+            stats = await pipeline.process_upload(
+                upload_id, column_mapping=upload.column_mapping
+            )
+
+            return {
+                "upload_id": upload_id,
+                "status": "processed",
+                "rows_processed": stats["rows_processed"],
+                "rows_inserted": stats["rows_inserted"],
+                "message": "Data processed successfully",
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/uploads/preview")
+async def preview_processing(body: dict):
+    """
+    Preview how the data will look after processing
+
+    Body: {"upload_id": "uuid"}
+    """
+    upload_id = body.get("upload_id")
+    if not upload_id:
+        raise HTTPException(status_code=400, detail="upload_id is required")
+
+    async with AsyncSessionLocal() as session:
+        upload = await session.get(RawUpload, upload_id)
+        if not upload:
+            raise HTTPException(status_code=404, detail="Upload not found")
+
+        pipeline = ProcessingPipeline(session)
+
+        try:
+            preview = await pipeline.preview_cleaned_data(
+                upload_id, column_mapping=upload.column_mapping
+            )
+            return preview
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/uploads/{upload_id}/mapping")

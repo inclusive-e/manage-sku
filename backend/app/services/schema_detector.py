@@ -56,9 +56,9 @@ class SchemaDetector:
 
         # Try datetime first
         try:
-            pd.to_datetime(non_null, errors="raise")
+            pd.to_datetime(non_null, errors="raise", format="mixed")
             # Check if it's date only or datetime
-            sample = pd.to_datetime(non_null.iloc[0])
+            sample = pd.to_datetime(non_null.iloc[0], format="mixed")
             if sample.hour == 0 and sample.minute == 0 and sample.second == 0:
                 return ColumnType.DATE
             return ColumnType.DATETIME

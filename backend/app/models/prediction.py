@@ -38,10 +38,10 @@ class SalesData(Base):
     __tablename__ = "sales_data"
 
     id = Column(Integer, primary_key=True, index=True)
-    upload_id = Column(Integer, nullable=False, index=True)
+    upload_id = Column(String(36), nullable=False, index=True)
 
     # Core fields
-    date = Column(DateTime(timezone=True), nullable=False, index=True)
+    date = Column(DateTime(timezone=False), nullable=False, index=True)
     sku_id = Column(String(100), nullable=False, index=True)
     sales_quantity = Column(Float, nullable=True)
     sales_revenue = Column(Float, nullable=True)

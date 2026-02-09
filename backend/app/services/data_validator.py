@@ -7,6 +7,8 @@ import pandas as pd
 from datetime import datetime
 from enum import Enum
 
+from app.core.timezone_utils import get_utc_timestamp
+
 class ValidationSeverity(str, Enum):
     """Severity levels for validation issues"""
     ERROR = "error"      # Must fix
@@ -113,8 +115,8 @@ class DataValidator:
             
             min_date = valid_dates.min()
             max_date = valid_dates.max()
-            now = pd.Timestamp.now()
-            
+            now = get_utc_timestamp()
+
             # Check for future dates
             if max_date > now:
                 future_count = (dates > now).sum()

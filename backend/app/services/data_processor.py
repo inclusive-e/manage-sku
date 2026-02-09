@@ -8,6 +8,8 @@ from typing import Any, Dict, Optional
 
 import pandas as pd
 
+from app.core.timezone_utils import get_utc_timestamp
+
 
 class DataProcessor:
     """Process uploaded data files"""
@@ -65,9 +67,11 @@ class DataProcessor:
             except:
                 pass
 
-            # Try datetime
+            # Try datetime with format inference
             try:
-                date_data = pd.to_datetime(df[col], errors="coerce")
+                date_data = pd.to_datetime(
+                    df[col], errors="coerce", format="mixed", dayfirst=False
+                )
                 if date_data.notna().sum() / len(df) > 0.8:  # 80% dates
                     df[col] = date_data
                     continue
@@ -96,12 +100,52 @@ class DataProcessor:
                     if len(mode_date) > 0:
                         df[col] = df[col].fillna(mode_date[0])
                     else:
-                        df[col] = df[col].fillna(pd.Timestamp.now().normalize())
+                        df[col] = df[col].fillna(get_utc_timestamp().normalize())
                 # Check if column is boolean
                 elif pd.api.types.is_bool_dtype(df[col]):
                     df[col] = df[col].fillna(False)
                 # Otherwise treat as string/object
                 else:
                     df[col] = df[col].fillna("")
+
+        return df
+
+    @staticmethod
+    def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+        """Apply all cleaning steps in sequence"""
+        df = df.copy()
+        df = DataProcessor.clean_column_names(df)
+        df = DataProcessor.infer_and_convert_types(df)
+        df = DataProcessor.fill_missing_values(df)
+        return df
+
+    @staticmethod
+    def standardize_column_mapping(
+        df: pd.DataFrame, mapping: Dict[str, str]
+    ) -> pd.DataFrame:
+        """Rename columns based on mapping {'old_name': 'new_name'}"""
+        return df.rename(columns=mapping)
+
+    @staticmethod
+    def prepare_for_database(
+        df: pd.DataFrame, column_mapping: Dict[str, str] = None
+    ) -> pd.DataFrame:
+        """Ensure all required columns exist with defaults"""
+        if column_mapping:
+            df = DataProcessor.standardize_column_mapping(df, column_mapping)
+
+        required_columns = {
+            "date": get_utc_timestamp().normalize(),
+            "sku_id": "UNKNOWN",
+            "sales_quantity": 0.0,
+            "unit_price": 0.0,
+            "sales_revenue": 0.0,
+            "stock_level": 0,
+            "category": "",
+        }
+
+        for col, default in required_columns.items():
+            if col not in df.columns:
+                df[col] = default
 
         return df
