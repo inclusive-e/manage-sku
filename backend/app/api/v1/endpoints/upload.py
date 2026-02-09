@@ -52,7 +52,14 @@ async def upload_file(
         # 3. Clean column names
         df = DataProcessor.clean_column_names(df)
 
-        # 4. Detect schema
+        # 4. Infer and convert types
+        df = DataProcessor.infer_and_convert_types(df)
+
+        # 5. Fill missing values with appropriate defaults
+        # NOTE: Commented out for now - will be used in Phase 2 processing pipeline
+        # df = DataProcessor.fill_missing_values(df)
+
+        # 6. Detect schema
         schema = SchemaDetector.detect_schema(df)
 
         # 5. Validate data

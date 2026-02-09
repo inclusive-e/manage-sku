@@ -9,7 +9,7 @@ class RawUpload(Base):
 
     __tablename__ = "raw_uploads"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String(36), primary_key=True, index=True)
     filename = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=False)
     file_size_bytes = Column(BigInteger, nullable=True)
