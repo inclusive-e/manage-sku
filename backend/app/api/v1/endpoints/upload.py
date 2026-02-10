@@ -9,6 +9,7 @@ from typing import Optional
 import pandas as pd
 from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
+from sqlalchemy import func, select
 
 from app.core.database import AsyncSessionLocal
 from app.models.prediction import RawUpload
@@ -124,10 +125,46 @@ async def get_upload_status(upload_id: str):
 
 
 @router.get("/uploads")
-async def list_uploads(skip: int = 0, limit: int = 100):
-    """List all uploads"""
-    # TODO: Implement listing with pagination
-    return {"message": "Not implemented", "skip": skip, "limit": limit}
+async def list_uploads(skip: int = 0, limit: int = 10):
+    """List all uploads without schema details"""
+    async with AsyncSessionLocal() as session:
+        # Get total count
+        count_result = await session.execute(
+            select(func.count()).select_from(RawUpload)
+        )
+        total = count_result.scalar()
+
+        # Get uploads with pagination
+        result = await session.execute(
+            select(RawUpload)
+            .order_by(RawUpload.uploaded_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        uploads = result.scalars().all()
+
+        # Format response without schema
+        upload_list = []
+        for upload in uploads:
+            upload_list.append(
+                {
+                    "upload_id": upload.id,
+                    "filename": upload.filename,
+                    "status": upload.status,
+                    "row_count": upload.row_count,
+                    "column_count": upload.column_count,
+                    "uploaded_at": upload.uploaded_at,
+                    "processed_at": upload.processed_at,
+                    "validation": upload.validation_report,
+                }
+            )
+
+        return {
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "uploads": upload_list,
+        }
 
 
 @router.post("/uploads/process")

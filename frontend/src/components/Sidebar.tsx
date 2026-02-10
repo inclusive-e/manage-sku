@@ -1,9 +1,11 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, Users, Settings } from 'lucide-react';
+import { LayoutDashboard, Package, Database, Upload, Users, Settings } from 'lucide-react';
 
 const menuItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/products', label: 'Products', icon: Package },
+  { path: '/data', label: 'Data', icon: Database },
+  { path: '/upload', label: 'Data Upload', icon: Upload },
   { path: '/users', label: 'Users', icon: Users },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];

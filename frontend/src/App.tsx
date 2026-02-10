@@ -5,6 +5,8 @@ import { Products } from "./pages/Products";
 import { Users } from "./pages/Users";
 import { Settings } from "./pages/Settings";
 import { DataUpload } from "./pages/DataUpload";
+import { Data } from "./pages/Data";
+import { DataDetails } from "./pages/DataDetails";
 
 function App() {
   return (
@@ -16,9 +18,11 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/data" element={<Data />} />
+            <Route path="/data/:id" element={<DataDetails />} />
+            <Route path="/upload" element={<DataUpload />} />
             <Route path="/users" element={<Users />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/upload" element={<DataUpload />} />
           </Routes>
         </main>
       </div>
