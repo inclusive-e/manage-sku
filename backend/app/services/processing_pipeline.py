@@ -66,6 +66,9 @@ class ProcessingPipeline:
             # Prepare for database
             df = DataProcessor.prepare_for_database(df)
 
+            # Create complete daily time series (no gaps)
+            df = DataProcessor.create_complete_daily_series(df)
+
             # Insert into sales_data
             await self._insert_to_database(df, upload_id)
 
@@ -101,6 +104,7 @@ class ProcessingPipeline:
                 if pd.notna(row.get("stock_level"))
                 else 0,
                 category=str(row.get("category", "")),
+                source_type=str(row.get("source_type", "user")),
             )
             records.append(record)
 

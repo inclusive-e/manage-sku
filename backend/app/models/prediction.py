@@ -51,6 +51,9 @@ class SalesData(Base):
     category = Column(String(100), nullable=True)
     unit_price = Column(Float, nullable=True)
 
+    # Source tracking: 'user' = from CSV, 'system' = filled gaps by processor
+    source_type = Column(String(20), nullable=False, default="user")
+
     # Metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -66,3 +69,49 @@ class Prediction(Base):
     confidence = Column(Float, nullable=True)
     model_version = Column(String, default="latest")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Feature(Base):
+    """MVP: Minimal feature store with 10 core features for heuristic forecasting"""
+
+    __tablename__ = "features"
+
+    id = Column(Integer, primary_key=True, index=True)
+    upload_id = Column(String(36), nullable=False, index=True)
+    sku_id = Column(String(100), nullable=False, index=True)
+    date = Column(DateTime(timezone=False), nullable=False, index=True)
+
+    # Core target
+    sales_quantity = Column(Float, nullable=False)
+    unit_price = Column(Float, nullable=True)
+
+    # Lags (essential for heuristics)
+    lag_7d = Column(Float, nullable=True)  # Last week
+    lag_28d = Column(Float, nullable=True)  # Same week last month
+
+    # Rolling averages (trends)
+    rolling_mean_7d = Column(Float, nullable=True)  # Short-term trend
+    rolling_mean_28d = Column(Float, nullable=True)  # Monthly average
+
+    # Calendar features (seasonality)
+    day_of_week = Column(Integer, nullable=True)  # 0=Monday, 6=Sunday
+    week_of_year = Column(Integer, nullable=True)  # 1-53
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    def to_dict(self):
+        """Convert to dictionary for API responses"""
+        return {
+            "id": self.id,
+            "upload_id": self.upload_id,
+            "sku_id": self.sku_id,
+            "date": self.date.isoformat() if self.date else None,
+            "sales_quantity": self.sales_quantity,
+            "unit_price": self.unit_price,
+            "lag_7d": self.lag_7d,
+            "lag_28d": self.lag_28d,
+            "rolling_mean_7d": self.rolling_mean_7d,
+            "rolling_mean_28d": self.rolling_mean_28d,
+            "day_of_week": self.day_of_week,
+            "week_of_year": self.week_of_year,
+        }
