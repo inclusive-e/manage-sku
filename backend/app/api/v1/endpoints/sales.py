@@ -3,11 +3,10 @@ Sales Data API Endpoints
 CRUD operations for processed sales data
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.models.prediction import SalesData
@@ -149,68 +148,4 @@ async def get_sales_by_upload(
                 }
                 for s in sales
             ],
-        }
-
-
-@router.get("/uploads/{upload_id}/sales/summary")
-async def get_sales_summary(upload_id: str):
-    """
-    Get summary statistics for sales data of a specific upload
-
-    Returns aggregated metrics like total revenue, total quantity, etc.
-    """
-    async with AsyncSessionLocal() as session:
-        # Check if upload has sales data
-        result = await session.execute(
-            select(func.count())
-            .select_from(SalesData)
-            .where(SalesData.upload_id == upload_id)
-        )
-        total_records = result.scalar()
-
-        if total_records == 0:
-            return {
-                "upload_id": upload_id,
-                "total_records": 0,
-                "message": "No sales data found for this upload",
-            }
-
-        # Get summary stats
-        result = await session.execute(
-            select(
-                func.count().label("total_records"),
-                func.sum(SalesData.sales_quantity).label("total_quantity"),
-                func.sum(SalesData.sales_revenue).label("total_revenue"),
-                func.avg(SalesData.sales_quantity).label("avg_quantity"),
-                func.avg(SalesData.sales_revenue).label("avg_revenue"),
-                func.count(func.distinct(SalesData.sku_id)).label("unique_skus"),
-            ).where(SalesData.upload_id == upload_id)
-        )
-        stats = result.one()
-
-        # Get date range
-        date_result = await session.execute(
-            select(
-                func.min(SalesData.date).label("min_date"),
-                func.max(SalesData.date).label("max_date"),
-            ).where(SalesData.upload_id == upload_id)
-        )
-        date_range = date_result.one()
-
-        return {
-            "upload_id": upload_id,
-            "total_records": total_records,
-            "summary": {
-                "total_quantity": float(stats.total_quantity or 0),
-                "total_revenue": float(stats.total_revenue or 0),
-                "average_quantity": float(stats.avg_quantity or 0),
-                "average_revenue": float(stats.avg_revenue or 0),
-                "unique_skus": stats.unique_skus,
-            },
-            "date_range": {
-                "start": date_range.min_date.isoformat()
-                if date_range.min_date
-                else None,
-                "end": date_range.max_date.isoformat() if date_range.max_date else None,
-            },
         }

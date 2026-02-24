@@ -4,13 +4,14 @@ Simple heuristic forecasting - no ML models needed.
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
+from app.services.analysis_pipeline import AnalysisPipeline
 from app.services.heuristic_forecaster import ForecastEvaluator, HeuristicForecaster
 from app.services.simple_feature_engineer import SimpleFeatureEngineer
 
@@ -44,6 +45,9 @@ class SKUForecast(BaseModel):
     historical_avg: float
     historical_std: float
     weekly_forecasts: List[WeeklyForecast]
+    analysis: Dict = {}
+    backtest_results: Dict = {}
+    reasoning: str = ""
 
 
 class ForecastResponse(BaseModel):
@@ -113,12 +117,24 @@ async def generate_forecast(request: ForecastRequest):
                 if len(df) == 0:
                     continue
 
-                # Generate forecast
-                print(df)
+                # Generate forecast using AnalysisPipeline
+                # Step 1: Analyze data and select best method
+                pipeline = AnalysisPipeline()
+                selection_result = pipeline.select_best_method(df)
+
+                # Step 2: Generate forecast using selected method
                 forecast_result = forecaster.generate_forecast(
-                    df, horizon_weeks=request.horizon_weeks, method=request.method
+                    df,
+                    horizon_weeks=request.horizon_weeks,
+                    method=selection_result["selected_method"],
                 )
-                print(forecast_result["weekly_forecasts"])
+
+                # Step 3: Combine results
+                forecast_result["analysis"] = selection_result["analysis"]
+                forecast_result["backtest_results"] = selection_result[
+                    "backtest_results"
+                ]
+                forecast_result["reasoning"] = selection_result["reasoning"]
 
                 # Format response
                 weekly_forecasts = [
@@ -134,6 +150,9 @@ async def generate_forecast(request: ForecastRequest):
                         historical_avg=forecast_result["historical_avg"],
                         historical_std=forecast_result["historical_std"],
                         weekly_forecasts=weekly_forecasts,
+                        analysis=forecast_result.get("analysis", {}),
+                        backtest_results=forecast_result.get("backtest_results", {}),
+                        reasoning=forecast_result.get("reasoning", ""),
                     )
                 )
 

@@ -130,7 +130,7 @@ export function DataDetails() {
       setSalesLoading(true);
       setSalesError(null);
       try {
-        const response = await fetch(`${API_URL}/api/v1/performance/${id}/sales?days=${selectedDays}`);
+        const response = await fetch(`${API_URL}/api/v1/metrics/${id}/sales?days=${selectedDays}`);
         if (!response.ok) {
           throw new Error('Failed to fetch sales performance');
         }
@@ -152,7 +152,7 @@ export function DataDetails() {
       setProductLoading(true);
       setProductError(null);
       try {
-        const response = await fetch(`${API_URL}/api/v1/performance/${id}/product?days=${productDays}`);
+        const response = await fetch(`${API_URL}/api/v1/metrics/${id}/product?days=${productDays}`);
         if (!response.ok) {
           throw new Error('Failed to fetch product performance');
         }
