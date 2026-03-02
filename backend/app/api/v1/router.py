@@ -4,7 +4,9 @@ from app.api.v1.endpoints import forecasts, metrics, predictions, sales, upload
 
 api_router = APIRouter()
 
-api_router.include_router(predictions.router, prefix="/predictions", tags=["predictions"])
+api_router.include_router(
+    predictions.router, prefix="/predictions", tags=["predictions"]
+)
 api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
 api_router.include_router(sales.router, prefix="/sales", tags=["sales"])
 api_router.include_router(forecasts.router, prefix="/forecasts", tags=["forecasts"])
